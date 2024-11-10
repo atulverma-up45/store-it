@@ -1,0 +1,10 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "next/typescript",
+    "next/typescript",
+    "standard",
+    "plugin:tailwindcss/recommemded",
+    "prettier"
+  ]
+}
