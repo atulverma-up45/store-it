@@ -83,11 +83,13 @@ export const verifySecret = async ({
 
     const session = await account.createSession(accountId, password);
 
+    // Set the session cookie
     (await cookies()).set("appwrite-session", session.secret, {
       path: "/",
       httpOnly: true,
       sameSite: "strict",
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7, // 1 week
     });
 
     return parseStringify({ sessionId: session.$id });
@@ -96,19 +98,27 @@ export const verifySecret = async ({
   }
 };
 
+
 export const getCurrentUser = async () => {
-  const { databases, account } = await createSessionClient();
-  const result = await account.get();
+  try {
+    const { databases, account } = await createSessionClient();
+    const result = await account.get();
 
-  const user = await databases.listDocuments(
-    appwriteConfig.databaseId,
-    appwriteConfig.usersCollectionId,
-    [Query.equal("accountId", result.$id)]
-  );
+    const user = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.usersCollectionId,
+      [Query.equal("accountId", result.$id)]
+    );
 
-  if (user.total <= 0) return null;
+    if (user.total <= 0) {
+      return null;
+    }
 
-  return parseStringify(user.documents[0]);
+    return parseStringify(user.documents[0]);
+  } catch (error) {
+    console.error("Error fetching current user:", error);
+    redirect("/sign-in");
+  }
 };
 
 export const signOutUser = async () => {
